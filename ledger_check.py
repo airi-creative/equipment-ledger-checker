@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """備品台帳チェッカー（Python、標準ライブラリのみ）。
 
-CSV の備品台帳を読み込み、次の異常を検出する：
-  1. 必須項目（備品ID／名称／現場）の欠落
-  2. 備品ID の重複
-  3. 日付フォーマットの不正
-  4. 返却予定日を過ぎているのに未返却
+CSV の備品台帳を読み込み、次の異常を検出して
+Markdown レポートを出力する：
+  1. 返却予定日を過ぎているのに未返却
+  2. 必須項目（備品ID／名称／現場）の欠落
+  3. 備品ID の重複
+  4. 日付フォーマットの不正
 
 使い方：py ledger_check.py sample_ledger.csv
 実データではなく、サンプル（テスト）データで使う前提。
@@ -67,9 +68,21 @@ def main():
     with open(path, encoding="utf-8-sig", newline="") as f:
         rows = list(csv.DictReader(f))
     problems = check(rows, today)
+    out = "anomaly_report.md"
+    with open(out, "w", encoding="utf-8") as f:
+        f.write(f"# 備品台帳 異常レポート\n\n")
+        f.write(f"- 対象ファイル：{path}\n")
+        f.write(f"- チェック日：{today}\n")
+        f.write(f"- 台帳件数：{len(rows)} 件\n")
+        f.write(f"- 異常件数：{len(problems)} 件\n\n")
+        if problems:
+            f.write("| 行 | 備品ID | 内容 |\n|---|---|---|\n")
+            for lineno, item, msg in problems:
+                f.write(f"| {lineno} | {item} | {msg} |\n")
+        else:
+            f.write("異常は検出されませんでした。\n")
     print(f"台帳 {len(rows)} 件をチェックしました。異常 {len(problems)} 件。")
-    for lineno, item, msg in problems:
-        print(f"{lineno}行目 {item}：{msg}")
+    print(f"レポートを出力しました：{out}")
 
 
 if __name__ == "__main__":
